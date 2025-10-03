@@ -43,7 +43,7 @@ df['Longitude'] = coords[1]
 
 df.dropna(subset=['Latitude', 'Longitude'], inplace=True)
 
-Show map centered on BC
+# Show map centered on BC
 
 m = folium.Map(location=[53.7267, -127.6476], zoom_start=5)
 
