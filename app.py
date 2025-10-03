@@ -9,7 +9,7 @@ Title
 st.title("📍 BC Liquor License Map Agent") 
 st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
 
-Load data from uploaded Excel file
+# Load data from uploaded Excel file
 
 @st.cache_data def load_data(): df = pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...") return df
 
