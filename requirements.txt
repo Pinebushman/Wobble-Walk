@@ -1,0 +1,6 @@
+streamlit==1.30.0           # Main web app framework
+streamlit-folium==0.12.1    # Folium maps integration for Streamlit
+pandas==2.2.1               # Data analysis
+openpyxl==3.1.2             # Excel file support for Pandas
+requests==2.31.0            # HTTP requests
+streamlit-javascript==0.1.5 # JavaScript integration in Streamlit
