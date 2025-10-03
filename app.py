@@ -18,7 +18,7 @@ def load_data():
 
 df = load_data()
 
-Check for previously geocoded coordinates
+# Check for previously geocoded coordinates
 
 if 'Latitude' not in df.columns or 'Longitude' not in df.columns: st.warning("Geocoding addresses. This may take a few moments.")
 
