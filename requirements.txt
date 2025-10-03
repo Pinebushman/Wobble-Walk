@@ -1,4 +1,4 @@
-streamlit==1.28.2
-folium==0.14.0
-streamlit-folium==0.11.1
-pandas==2.1.1
+streamlit>=1.30
+folium>=0.14
+geocoder
+pandas
