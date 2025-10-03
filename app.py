@@ -11,7 +11,10 @@ st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for f
 
 # Load data from uploaded Excel file
 
-@st.cache_data def load_data(): df = pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...") return df
+@st.cache_data
+def load_data():
+    df = pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...")
+    return df
 
 df = load_data()
 
