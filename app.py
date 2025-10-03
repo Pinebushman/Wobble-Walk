@@ -63,7 +63,7 @@ for _, row in df.iterrows():
     ).add_to(m)
 st_folium(m, width=700, height=500)
 
-Optional: display data table
+# Optional: display data table
 
 with st.expander("Show raw data"): st.dataframe(df)
 
