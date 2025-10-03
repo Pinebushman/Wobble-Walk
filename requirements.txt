@@ -1,4 +1,5 @@
 streamlit>=1.30
+streamlit-folium>=0.13
 folium>=0.14
 geocoder
 pandas
