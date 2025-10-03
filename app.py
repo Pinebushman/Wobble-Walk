@@ -1,5 +1,9 @@
-import streamlit as st import pandas as pd import folium from streamlit_folium import st_folium from geopy.geocoders import Nominatim from geopy.extra.rate_limiter import RateLimiter
-
+import streamlit as st
+import pandas as pd
+import folium
+from streamlit_folium import st_folium
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 Title
 
 st.title("📍 BC Liquor License Map Agent") st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
