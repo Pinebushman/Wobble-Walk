@@ -47,8 +47,20 @@ df.dropna(subset=['Latitude', 'Longitude'], inplace=True)
 
 m = folium.Map(location=[53.7267, -127.6476], zoom_start=5)
 
-for _, row in df.iterrows(): popup = f""" <b>{row['Establishment']}</b><br> License #: {row['Licence Number']}<br> Type: {row['Licence Type']}<br> Address: {row['Establishment Address Street']}, {row['Establishment Address City']}<br> Expiry: {row['Expiry Date']}<br> Licensee: {row['Licensee']}<br> """ folium.Marker( location=[row['Latitude'], row['Longitude']], popup=popup, icon=folium.Icon(color="blue", icon="info-sign") ).add_to(m)
-
+for _, row in df.iterrows():
+    popup = f"""
+    <b>{row['Establishment']}</b><br>
+    License #: {row['Licence Number']}<br>
+    Type: {row['Licence Type']}<br>
+    Address: {row['Establishment Address Street']}, {row['Establishment Address City']}<br>
+    Expiry: {row['Expiry Date']}<br>
+    Licensee: {row['Licensee']}<br>
+    """
+    folium.Marker(
+        location=[row['Latitude'], row['Longitude']],
+        popup=popup,
+        icon=folium.Icon(color="blue", icon="info-sign")
+    ).add_to(m)
 st_folium(m, width=700, height=500)
 
 Optional: display data table
