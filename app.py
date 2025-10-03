@@ -2,76 +2,92 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from math import radians, cos, sin, sqrt, atan2
+from math import radians, sin, cos, sqrt, atan2
 
-# App title
-st.set_page_config(page_title="BC Liquor License Map", layout="wide")
+st.set_page_config(page_title="BC Liquor License Map Agent", layout="wide")
+
 st.title("📍 BC Liquor License Map Agent")
-st.caption("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
+st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
 
-# Load the Excel data
+# Load the Excel file and clean it
 @st.cache_data
 def load_data():
-    return pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...")
+    xls = pd.read_excel("licenses.xlsx", sheet_name=None)  # Load all sheets
+    sheet_names = list(xls.keys())
 
-df = load_data()
+    # Try to find sheet with name containing 'licence'
+    for name in sheet_names:
+        if 'licence' in name.lower():
+            df = xls[name]
+            break
+    else:
+        st.error("No sheet with 'Licence' found.")
+        return pd.DataFrame()
 
-# Clean up columns
-df.columns = df.columns.str.strip()
-df = df.rename(columns={
-    'Licence Number': 'License Number',
-    'Establishment Name': 'Name',
-    'Site Address': 'Address',
-    'City': 'City',
-    'Latitude': 'Latitude',
-    'Longitude': 'Longitude',
-    'Licence Type': 'Type'
-})
+    df.columns = df.columns.str.strip()  # Clean up column names
+    required_cols = ["Latitude", "Longitude", "Establishment Name", "Licence Number", "City", "Status"]
+    if not all(col in df.columns for col in required_cols):
+        st.error("Required columns missing.")
+        return pd.DataFrame()
 
-# Remove rows without location data
-df = df.dropna(subset=['Latitude', 'Longitude'])
+    df = df.dropna(subset=["Latitude", "Longitude"])
+    return df
 
-# Get user location
-user_lat = st.number_input("📡 Enter your latitude:", format="%.6f", value=49.2827)
-user_lon = st.number_input("📡 Enter your longitude:", format="%.6f", value=-123.1207)
-
-# Haversine distance function
+# Calculate distance (in km) using haversine formula
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371  # km
-    phi1, phi2 = radians(lat1), radians(lat2)
-    dphi = radians(lat2 - lat1)
-    dlambda = radians(lon2 - lon1)
-    a = sin(dphi/2)**2 + cos(phi1)*cos(phi2)*sin(dlambda/2)**2
+    R = 6371  # Earth radius in km
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat, dlon = lat2 - lat1, lon2 - lon1
+    a = sin(dlat/2)**2 + cos(lat1)*cos(lat2)*sin(dlon/2)**2
     return R * 2 * atan2(sqrt(a), sqrt(1 - a))
 
-# Filter to nearby licenses (within 5 km)
-df["Distance (km)"] = df.apply(
-    lambda row: haversine(user_lat, user_lon, row["Latitude"], row["Longitude"]), axis=1
-)
-nearby = df[df["Distance (km)"] <= 5].sort_values("Distance (km)")
+# Load data
+df = load_data()
+if df.empty:
+    st.stop()
 
-# Show count
-st.success(f"Found {len(nearby)} licensed establishments within 5 km.")
+# Ask user for location
+st.markdown("## 📡 Your Location (Required for distance filtering)")
+lat = st.number_input("Latitude", value=49.2827, format="%.6f")
+lon = st.number_input("Longitude", value=-123.1207, format="%.6f")
+radius_km = st.slider("Search radius (km)", 0, 20, 5)
 
-# Create map
-m = folium.Map(location=[user_lat, user_lon], zoom_start=14)
-folium.Marker([user_lat, user_lon], tooltip="Your Location", icon=folium.Icon(color='blue')).add_to(m)
+# Filter by radius
+df["Distance (km)"] = df.apply(lambda row: haversine(lat, lon, row["Latitude"], row["Longitude"]), axis=1)
+nearby = df[df["Distance (km)"] <= radius_km]
 
-# Add markers for each establishment
+st.success(f"Showing {len(nearby)} locations within {radius_km} km")
+
+# Display table
+with st.expander("📋 Show table of nearby licenses"):
+    st.dataframe(nearby[[
+        "Establishment Name", "City", "Licence Number", "Status", "Distance (km)"
+    ]].sort_values("Distance (km)"))
+
+# Map
+m = folium.Map(location=[lat, lon], zoom_start=14)
+
+# Add your location
+folium.Marker(
+    location=[lat, lon],
+    tooltip="You are here",
+    icon=folium.Icon(color='blue')
+).add_to(m)
+
+# Add markers for establishments
 for _, row in nearby.iterrows():
-    popup_text = f"""
-    <b>{row['Name']}</b><br>
-    {row['Address']}, {row['City']}<br>
-    License #: {row['License Number']}<br>
-    Type: {row['Type']}<br>
+    popup = f"""
+    <b>{row['Establishment Name']}</b><br>
+    License #: {row['Licence Number']}<br>
+    City: {row['City']}<br>
+    Status: {row['Status']}<br>
     Distance: {row['Distance (km)']:.2f} km
     """
     folium.Marker(
-        [row['Latitude'], row['Longitude']],
-        tooltip=row['Name'],
-        popup=popup_text,
-        icon=folium.Icon(color='green' if row['Type'] == 'Liquor Primary' else 'red')
+        location=[row["Latitude"], row["Longitude"]],
+        popup=popup,
+        icon=folium.Icon(color='red', icon='info-sign')
     ).add_to(m)
 
-# Display the map
-st_data = st_folium(m, width=900, height=600)
+# Show map
+st_data = st_folium(m, width=700, height=500)
