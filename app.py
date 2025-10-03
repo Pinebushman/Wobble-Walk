@@ -1,49 +1,34 @@
 import streamlit as st import pandas as pd import folium from streamlit_folium import st_folium from geopy.geocoders import Nominatim from geopy.extra.rate_limiter import RateLimiter
 
-Title
+Load the Excel file and correct sheet
 
-st.title("🔽 BC Liquor License Map Agent") st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
+def load_data(): df = pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...") df = df.dropna(subset=["Latitude", "Longitude"]) return df
 
-Load data from uploaded Excel file
+Set up the page
 
-@st.cache_data def load_data(): df = pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...") return df
+st.set_page_config(page_title="BC Liquor License Map Agent", layout="wide") st.title("📍 BC Liquor License Map Agent") st.caption("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
+
+Load data
 
 df = load_data()
 
-Check for previously geocoded coordinates
+Set default map center (e.g., Vancouver)
 
-if 'Latitude' not in df.columns or 'Longitude' not in df.columns: st.warning("Geocoding addresses. This may take a few moments.")
+DEFAULT_LAT = 49.2827 DEFAULT_LON = -123.1207
 
-geolocator = Nominatim(user_agent="liquor-map")
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+Create folium map
 
-def get_coords(address):
-    try:
-        location = geocode(address)
-        return pd.Series([location.latitude, location.longitude]) if location else pd.Series([None, None])
-    except:
-        return pd.Series([None, None])
+m = folium.Map(location=[DEFAULT_LAT, DEFAULT_LON], zoom_start=12)
 
-full_addresses = df['Establishment Address Street'].astype(str) + ", " + \
-                 df['Establishment Address City'].astype(str) + ", BC, Canada"
+Add markers
 
-coords = full_addresses.apply(get_coords)
-df['Latitude'] = coords[0]
-df['Longitude'] = coords[1]
+for _, row in df.iterrows(): folium.Marker( location=[row["Latitude"], row["Longitude"]], popup=f""" <strong>{row['Establishment Name']}</strong><br> License: {row['Licence Number']}<br> Type: {row['Licence Type']}<br> Capacity: {row.get('Person Capacity', 'Unknown')}<br> Hours: {row.get('Hours of Sale', 'Unknown')}<br> Address: {row['Site Address']}<br> City: {row['City']} """, tooltip=row['Establishment Name'] ).add_to(m)
 
-Drop missing coordinate rows
+Display map
 
-df.dropna(subset=['Latitude', 'Longitude'], inplace=True)
+st_folium(m, width=800, height=600)
 
-Show map centered on BC
+Optional: view data table
 
-m = folium.Map(location=[53.7267, -127.6476], zoom_start=5)
-
-for _, row in df.iterrows(): popup = f""" <b>{row['Establishment']}</b><br> License #: {row['Licence Number']}<br> Type: {row['Licence Type']}<br> Address: {row['Establishment Address Street']}, {row['Establishment Address City']}<br> Expiry: {row['Expiry Date']}<br> Licensee: {row['Licensee']}<br> """ folium.Marker( location=[row['Latitude'], row['Longitude']], popup=popup, icon=folium.Icon(color="blue", icon="info-sign") ).add_to(m)
-
-st_folium(m, width=700, height=500)
-
-Optional: display data table
-
-with st.expander("Show raw data"): st.dataframe(df)
+with st.expander("Show full license data"): st.dataframe(df)
 
