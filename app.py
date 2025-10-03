@@ -66,3 +66,14 @@ st_folium(m, width=700, height=500)
 
 with st.expander("Show raw data"): st.dataframe(df)
 
+import io
+
+with st.expander("📥 Download updated Excel file"):
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, engine='openpyxl')
+    st.download_button(
+        label="Download geocoded licenses.xlsx",
+        data=buffer,
+        file_name="licenses_geocoded.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
