@@ -1,93 +1,77 @@
-# liquor_license_map_agent.py
-
 import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from folium.plugins import MarkerCluster
-import requests
-import tempfile
+from math import radians, cos, sin, sqrt, atan2
 
-# --- Page Setup ---
-st.set_page_config(layout="wide")
+# App title
+st.set_page_config(page_title="BC Liquor License Map", layout="wide")
 st.title("📍 BC Liquor License Map Agent")
-st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
+st.caption("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
 
-# --- Load Data from URL ---
+# Load the Excel data
 @st.cache_data
-def load_license_data_from_url():
-    url = "https://www2.gov.bc.ca/assets/gov/employment-business/business/liquor-regulation-licensing/liquor/licensed-establishments.xlsx"
-    response = requests.get(url)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
-        tmp.write(response.content)
-        tmp_path = tmp.name
+def load_data():
+    return pd.read_excel("liquor_licenses.xlsx", sheet_name="Licence")
 
-    df = pd.read_excel(tmp_path, sheet_name="Liquor Web Stats Active Lic...")
-    service_df = pd.read_excel(tmp_path, sheet_name="Service Areas")
+df = load_data()
 
-    df = df.merge(
-        service_df[[
-            "Licence Number (Licence) (Licence)", "Capacity", "Area Location"
-        ]],
-        how="left",
-        left_on="Licence Number",
-        right_on="Licence Number (Licence) (Licence)"
-    )
-    df = df.dropna(subset=["Establishment Address Street"])
-    return df
+# Clean up columns
+df.columns = df.columns.str.strip()
+df = df.rename(columns={
+    'Licence Number': 'License Number',
+    'Establishment Name': 'Name',
+    'Site Address': 'Address',
+    'City': 'City',
+    'Latitude': 'Latitude',
+    'Longitude': 'Longitude',
+    'Licence Type': 'Type'
+})
 
-# Load data
-df = load_license_data_from_url()
+# Remove rows without location data
+df = df.dropna(subset=['Latitude', 'Longitude'])
 
-# Fallback location (Gastown, Vancouver)
-latitude = 49.2768
-longitude = -123.1236
-st.sidebar.info("📍 GPS fallback location used: Gastown, Vancouver")
+# Get user location
+user_lat = st.number_input("📡 Enter your latitude:", format="%.6f", value=49.2827)
+user_lon = st.number_input("📡 Enter your longitude:", format="%.6f", value=-123.1207)
 
-# --- Base Map ---
-m = folium.Map(location=[latitude, longitude], zoom_start=15)
-folium.Marker(
-    [latitude, longitude],
-    tooltip="📍 You are here",
-    icon=folium.Icon(color="blue", icon="user")
-).add_to(m)
+# Haversine distance function
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # km
+    phi1, phi2 = radians(lat1), radians(lat2)
+    dphi = radians(lat2 - lat1)
+    dlambda = radians(lon2 - lon1)
+    a = sin(dphi/2)**2 + cos(phi1)*cos(phi2)*sin(dlambda/2)**2
+    return R * 2 * atan2(sqrt(a), sqrt(1 - a))
 
-# --- Plot Establishments Nearby ---
-marker_cluster = MarkerCluster().add_to(m)
+# Filter to nearby licenses (within 5 km)
+df["Distance (km)"] = df.apply(
+    lambda row: haversine(user_lat, user_lon, row["Latitude"], row["Longitude"]), axis=1
+)
+nearby = df[df["Distance (km)"] <= 5].sort_values("Distance (km)")
 
-for _, row in df.iterrows():
-    address = row["Establishment Address Street"]
-    city = row["Establishment Address City"]
-    name = row["Establishment"]
-    lic_type = row["Licence Type"]
-    lic_no = row["Licence Number"]
-    capacity = row["Capacity"]
-    expiry = row["Expiry Date"]
+# Show count
+st.success(f"Found {len(nearby)} licensed establishments within 5 km.")
 
-    # Simulate real map location using slight offsets for now
-    import random
-    lat_offset = random.uniform(-0.01, 0.01)
-    lon_offset = random.uniform(-0.01, 0.01)
-    est_lat = latitude + lat_offset
-    est_lon = longitude + lon_offset
+# Create map
+m = folium.Map(location=[user_lat, user_lon], zoom_start=14)
+folium.Marker([user_lat, user_lon], tooltip="Your Location", icon=folium.Icon(color='blue')).add_to(m)
 
-    popup_html = f"""
-    <b>{name}</b><br>
-    📍 {address}, {city}<br>
-    🔐 <b>{lic_type}</b> License #{lic_no}<br>
-    🧍 Capacity: {int(capacity) if pd.notna(capacity) else 'N/A'}<br>
-    📆 Expires: {expiry.date() if pd.notna(expiry) else 'N/A'}
+# Add markers for each establishment
+for _, row in nearby.iterrows():
+    popup_text = f"""
+    <b>{row['Name']}</b><br>
+    {row['Address']}, {row['City']}<br>
+    License #: {row['License Number']}<br>
+    Type: {row['Type']}<br>
+    Distance: {row['Distance (km)']:.2f} km
     """
     folium.Marker(
-        [est_lat, est_lon],
-        popup=popup_html,
-        icon=folium.Icon(color="green", icon="glass")
-    ).add_to(marker_cluster)
+        [row['Latitude'], row['Longitude']],
+        tooltip=row['Name'],
+        popup=popup_text,
+        icon=folium.Icon(color='green' if row['Type'] == 'Liquor Primary' else 'red')
+    ).add_to(m)
 
-# --- Render Map ---
-st_data = st_folium(m, width=1000, height=700)
-
-# --- Debug Info ---
-with st.expander("ℹ️ Debug Info"):
-    st.write("Your coordinates:", coords)
-    st.write("Licenses plotted:", len(df))
+# Display the map
+st_data = st_folium(m, width=900, height=600)
