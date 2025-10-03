@@ -39,7 +39,7 @@ coords = full_addresses.apply(get_coords)
 df['Latitude'] = coords[0]
 df['Longitude'] = coords[1]
 
-Drop missing coordinate rows
+# Drop missing coordinate rows
 
 df.dropna(subset=['Latitude', 'Longitude'], inplace=True)
 
