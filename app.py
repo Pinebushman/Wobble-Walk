@@ -5,7 +5,6 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 from folium.plugins import MarkerCluster
-from streamlit_javascript import st_javascript
 import requests
 import tempfile
 
@@ -40,16 +39,10 @@ def load_license_data_from_url():
 # Load data
 df = load_license_data_from_url()
 
-# --- Get User's Real-Time GPS Location ---
-st.sidebar.header("📡 Your Location (via GPS)")
-coords = st_javascript("navigator.geolocation.getCurrentPosition((loc) => loc.coords)")
-
-if coords:
-    latitude = coords["latitude"]
-    longitude = coords["longitude"]
-else:
-    st.warning("📍 Location access is required. Using fallback location (Gastown).")
-    latitude, longitude = 49.2768, -123.1236
+# Fallback location (Gastown, Vancouver)
+latitude = 49.2768
+longitude = -123.1236
+st.sidebar.info("📍 GPS fallback location used: Gastown, Vancouver")
 
 # --- Base Map ---
 m = folium.Map(location=[latitude, longitude], zoom_start=15)
