@@ -12,7 +12,7 @@ st.caption("Allow GPS to show nearby licensed establishments. Tap markers for fu
 # Load the Excel data
 @st.cache_data
 def load_data():
-    return pd.read_excel("licenses.xlsx", sheet_name="Licence")
+    return pd.read_excel("licenses.xlsx", sheet_name="Liquor Web Stats Active Lic...")
 
 df = load_data()
 
