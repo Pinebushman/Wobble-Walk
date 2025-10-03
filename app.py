@@ -6,7 +6,8 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 Title
 
-st.title("📍 BC Liquor License Map Agent") st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
+st.title("📍 BC Liquor License Map Agent") 
+st.markdown("Allow GPS to show nearby licensed establishments. Tap markers for full details.")
 
 Load data from uploaded Excel file
 
