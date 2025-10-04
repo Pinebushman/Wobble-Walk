@@ -17,8 +17,7 @@ def load_data():
 df = load_data()
 
 # --- Load API key from secrets.toml ---
-GOOGLE_API_KEY = 
-st.secrets["google_maps_api_key"]
+GOOGLE_API_KEY = st.secrets["google_maps_api_key"]
 
 # --- Google Geocoding Function ---
 def google_geocode(address):
