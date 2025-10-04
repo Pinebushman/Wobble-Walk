@@ -16,7 +16,7 @@ def load_data():
 
 df = load_data()
 
-# --- Load Google API key securely ---
+# --- Load API key from secrets.toml ---
 GOOGLE_API_KEY = 
 st.secrets["google_maps_api_key"]
 
