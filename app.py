@@ -3,7 +3,7 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 
 # Load your file
-df = pd.read_excel("licenses_subset.xlsx")
+df = pd.read_excel("Copy of licenses.xlsx")
 
 # Create full address if not already present
 if 'full_address' not in df.columns:
